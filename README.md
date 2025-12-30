@@ -63,8 +63,5 @@ python src/main.py
 | 34–66 | Medium |
 | 67–100 | High |
 
----
 
-## 👤 Author
-Vinay Kumar Nethavath  
-B.Tech – IIIT Allahabad
+
