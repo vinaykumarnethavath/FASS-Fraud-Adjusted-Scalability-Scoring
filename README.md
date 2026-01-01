@@ -7,7 +7,7 @@ It predicts the probability of success and converts it into a **0–100 interpre
 ---
 
 ## 🚀 Features
-- Logistic Regression–based risk scoring
+- GradientBoosting–based risk scoring
 - Leakage-safe preprocessing
 - Probability calibration
 - Risk bucket generation (Low / Medium / High)
@@ -19,7 +19,7 @@ It predicts the probability of success and converts it into a **0–100 interpre
 
 Startup Dataset  
 → Cleaning & Feature Engineering  
-→ Logistic Regression (Balanced)  
+→ GradientBoosting (Balanced)  
 → Probability Calibration  
 → Risk Score (0–100)  
 → Risk Bucket Assignment  
