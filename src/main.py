@@ -15,7 +15,9 @@ from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
-from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.calibration import CalibratedClassifierCV
+
 from sklearn.metrics import (
     accuracy_score,
     roc_auc_score,
@@ -27,10 +29,9 @@ from sklearn.metrics import (
 )
 from sklearn.calibration import calibration_curve
 
-# try to allow upload on colab if file is missing
 def in_colab() -> bool:
     try:
-        import google.colab  # type: ignore
+        import google.colab 
         return True
     except Exception:
         return False
@@ -40,14 +41,13 @@ def prompt_upload_if_needed(path: str) -> None:
         return
     if in_colab():
         print("input.csv not found. please upload input.csv")
-        from google.colab import files  # type: ignore
+        from google.colab import files  
         files.upload()
     else:
         print("input.csv not found in current folder")
         print("place input.csv next to this script and run again")
         sys.exit(1)
-
-# basic helpers
+#helper 
 def to_year(s):
     try:
         s = str(s)
@@ -132,14 +132,14 @@ def build_pipeline(num_cols: List[str], cat_cols: List[str]) -> Pipeline:
         ("num", num_pipe, num_cols),
         ("cat", cat_pipe, cat_cols)
     ], sparse_threshold=0.3)
-    clf = LogisticRegression(
-        solver="saga",
-        penalty="l2",
-        C=0.6,
-        max_iter=8000,
-        class_weight="balanced",
-        n_jobs=1
-    )
+ clf = GradientBoostingClassifier(
+    n_estimators=250,
+    learning_rate=0.05,
+    max_depth=3,
+    subsample=0.9,
+    random_state=42
+)
+
     pipe = Pipeline([("pre", pre), ("clf", clf)])
     return pipe
 
@@ -191,7 +191,7 @@ def export_reliability_plot(y_true: np.ndarray, p: np.ndarray, path: str) -> Non
 def model_summary(pipe: Pipeline, X_fit: pd.DataFrame, topk: int = 20) -> pd.DataFrame:
     try:
         pre: ColumnTransformer = pipe.named_steps["pre"]
-        clf: LogisticRegression = pipe.named_steps["clf"]
+        clf = pipe.named_steps["clf"]
         feat_names = []
         num_names = pre.transformers_[0][2]
         feat_names.extend(list(num_names))
@@ -229,7 +229,15 @@ def main():
     num_cols = list(X.select_dtypes(include=[np.number]).columns)
     cat_cols = [c for c in X.columns if c not in num_cols]
     pipe = build_pipeline(num_cols, cat_cols)
-    pipe.fit(X_tr, y_tr)
+   pipe.fit(X_tr, y_tr)
+
+pipe = CalibratedClassifierCV(
+    pipe,
+    method="isotonic",
+    cv=5
+)
+pipe.fit(X_tr, y_tr)
+
 
     p_va = pipe.predict_proba(X_va)[:, 1]
     thr, acc_va = choose_threshold(y_va.values, p_va, target_acc=0.96)
